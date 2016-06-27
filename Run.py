@@ -6,6 +6,8 @@ from Ships import getShip
 import time
 import re
 
+
+messageQueue = []
 s = openSocket()
 joinRoom(s)
 runServer = True
@@ -35,6 +37,12 @@ def getFactionID(f):
         return 0
 
 
+def processMessageQueue():
+    for item in messageQueue:
+        sendMessage(s, item)
+        time.sleep(0.125)  # Queue messages instead of blasting the server.
+
+
 def getRandomType():
     return random.randrange(1, 3)
 
@@ -52,19 +60,21 @@ def matchup(shiptype, factionid, teamsize):
     players = getWinners(teamsize * 2)
     for user in players:
         userShip = getShip(shiptype, factionid)
-        sendMessage(s, "/w {}".format(user) + " you fly a {}".format(userShip))
+        messageQueue.append("/w {}".format(user) + " you fly a {}".format(userShip))
     if teamsize == 1:
-        sendMessage("@{}".format(players[0]) + " will battle against @{}".format(players[1]))
+        messageQueue.append("{}".format(players[0]) + " will battle against {}".format(players[1]))
     else:
-        sendMessage(s, "The teams are as follows: ")
+        messageQueue.append("The teams are as follows: ")
         teamMessage = ""
         for player in range(0, teamsize):
             teamMessage += players[player] + " "
         teamMessage += "VS. "
         for player in range(teamsize, teamsize * 2):
             teamMessage += players[player] + " "
-        time.sleep(1)
-        sendMessage(s, teamMessage)
+
+        messageQueue.append(teamMessage)
+
+    processMessageQueue()
 
 
 while runServer:
